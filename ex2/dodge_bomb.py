@@ -1,10 +1,46 @@
 import os
 import sys
+import random
 import pygame as pg
 
 
-WIDTH, HEIGHT = 1600, 900
+WIDTH, HEIGHT = 1300, 800
+DELTA={
+    pg.K_UP:(0,-5),
+    pg.K_DOWN:(0,5),
+    pg.K_LEFT:(-5,0),
+    pg.K_RIGHT:(5,0),
+}
+def load():
+    img = pg.image.load("fig/3.png")
+    DIERCTION={
+        (0,0):pg.transform.rotozoom(img, 0, 2.0),
+        (-5,0):pg.transform.rotozoom(img, 0, 2.0),
+        (-5,-5):pg.transform.rotozoom(img, 315, 2.0),
+        (-5,5):pg.transform.rotozoom(img, 45, 2.0),
+        (0,5):pg.transform.rotozoom(img, 90, 2.0),
+        (5,5):pg.transform.rotozoom(img, 135, 2.0),
+        (5,0):pg.transform.rotozoom(img, 180, 2.0),
+        (5,-5):pg.transform.rotozoom(img, 225, 2.0),
+        (0,-5):pg.transform.rotozoom(img, 270, 2.0),
+    } 
+    return DIERCTION 
+
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+
+def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
+    """
+    引数：こうかとんRect　または　爆弾Rect
+    戻り値:真理値タプル
+    画面内ならTrue、画面外ならFalse
+    """
+    yoko, tate = True, True
+    if rct.left < 0 or WIDTH < rct.right:#横方向
+        yoko = False
+    if rct.top < 0 or HEIGHT < rct.bottom:#縦方向
+        tate = False
+    return yoko, tate
 
 
 def main():
@@ -14,26 +50,41 @@ def main():
     kk_img = pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 2.0)
     kk_rct = kk_img.get_rect()
     kk_rct.center = 900, 400
+    bb_img = pg.Surface((20,20)) #1辺が20の空のSurfaceを作る
+    bb_img.set_colorkey((0,0,0))
+    pg.draw.circle(bb_img, (255, 0, 0), (10, 10), 10) # 空のSurfaceに赤い円を描く
+    bb_rct = bb_img.get_rect()  # 爆弾Rect
+    bb_rct.center = random.randint(0, WIDTH), random.randint(0, HEIGHT)
+    vx, vy = +5, +5  # 爆弾の横方向速度，縦方向速度
     clock = pg.time.Clock()
     tmr = 0
+    kk_images=load()
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT: 
                 return
+        if kk_rct.colliderect(bb_rct):
+            return #ゲームオーバー
         screen.blit(bg_img, [0, 0]) 
 
         key_lst = pg.key.get_pressed()
         sum_mv = [0, 0]
-        if key_lst[pg.K_UP]:
-            sum_mv[1] -= 5
-        if key_lst[pg.K_DOWN]:
-            sum_mv[1] += 5
-        if key_lst[pg.K_LEFT]:
-            sum_mv[0] -= 5
-        if key_lst[pg.K_RIGHT]:
-            sum_mv[0] += 5
+        for k,v in DELTA.items():
+            if key_lst[k]:
+                sum_mv[0] += v[0]
+                sum_mv[1] += v[1]
         kk_rct.move_ip(sum_mv)
-        screen.blit(kk_img, kk_rct)
+        if check_bound(kk_rct) != (True,True):
+            kk_rct.move_ip(-sum_mv[0], -sum_mv[1])
+        screen.blit(kk_images[tuple(sum_mv)], kk_rct)
+        
+        bb_rct.move_ip(vx, vy)
+        yoko, tate = check_bound(bb_rct)
+        if not yoko:
+            vx *= -1
+        if not tate:
+            vy *= -1
+        screen.blit(bb_img, bb_rct)
         pg.display.update()
         tmr += 1
         clock.tick(50)
