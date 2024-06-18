@@ -11,7 +11,7 @@ DELTA={
     pg.K_LEFT:(-5,0),
     pg.K_RIGHT:(5,0),
 }
-def load():
+def load(): #こうかとん向き
     img = pg.image.load("fig/3.png")
     DIERCTION={
         (0,0):pg.transform.rotozoom(img, 0, 2.0),
